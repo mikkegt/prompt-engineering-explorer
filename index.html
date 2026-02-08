@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Prompt Engineering Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    background: #0a0a0f;
+    color: #e8e6e3;
+    font-family: 'Noto Sans JP', 'Segoe UI', sans-serif;
+    padding: 24px;
+  }
+  .header { text-align: center; margin-bottom: 32px; }
+  .header-title {
+    display: inline-block;
+    background: linear-gradient(135deg, #FF6B35 0%, #7B2FF7 50%, #00B4D8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+  }
+  .header-sub {
+    color: #888;
+    font-size: 13px;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .filters {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1.5px solid #2a2a35;
+    background: rgba(255,255,255,0.03);
+    color: #888;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .filter-btn:hover { border-color: #444; }
+  .filter-btn.active {
+    border-color: #7B2FF7;
+    background: rgba(123, 47, 247, 0.15);
+    color: #c4a0ff;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .card {
+    position: relative;
+    text-align: left;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1.5px solid #1e1e28;
+    background: linear-gradient(135deg, #13131a, #16161f);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card:hover { transform: scale(1.01); }
+  .trending-badge {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: rgba(255, 107, 53, 0.15);
+    color: #FF6B35;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .card-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; line-height: 1.3; }
+  .card-summary { font-size: 12px; color: #999; line-height: 1.6; margin-bottom: 10px; }
+  .card-meta { display: flex; justify-content: space-between; align-items: center; }
+  .card-category { font-size: 10px; font-family: 'JetBrains Mono', monospace; opacity: 0.8; }
+  .card-difficulty { font-size: 11px; color: #666; letter-spacing: 1px; }
+  .detail-panel {
+    background: linear-gradient(135deg, #13131a, #18182a);
+    border-radius: 16px;
+    padding: 24px;
+    animation: fadeIn 0.3s ease;
+    margin-bottom: 24px;
+    display: none;
+  }
+  .detail-panel.visible { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .detail-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; padding-bottom: 12px; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.08em;
+  }
+  .technique-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ccc;
+    margin-bottom: 6px;
+  }
+  .technique-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .usecase-box { border-radius: 10px; padding: 16px; margin: 16px 0; }
+  .usecase-text { font-size: 13px; line-height: 1.7; color: #bbb; }
+  .insight-box {
+    background: rgba(255,255,255,0.03);
+    border-radius: 0 10px 10px 0;
+    padding: 16px;
+  }
+  .insight-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #FF9F1C;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.08em;
+  }
+  .insight-text { font-size: 13px; line-height: 1.7; color: #ddd; }
+  .footer {
+    text-align: center;
+    margin-top: 32px;
+    font-size: 11px;
+    color: #444;
+    font-family: 'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Advanced Prompt Engineering</div>
+  <div class="header-sub">2025年の高度な概念マップ ─ タップして詳細を探索</div>
+</div>
+
+<div class="filters" id="filters"></div>
+<div class="grid" id="grid"></div>
+<div class="detail-panel" id="detail"></div>
+<div class="footer">カードをタップして詳細を表示 ─ カテゴリで絞り込み可能</div>
+
+<script>
+const concepts = [
+  {
+    id: "agentic",
+    title: "\u{1F916} エージェンティック・パターン",
+    category: "アーキテクチャ",
+    color: "#FF6B35",
+    summary: "LLMが自律的にツールを使い、計画→実行→検証のループを回す設計パターン",
+    details: [
+      "ReAct (Reasoning + Acting): 思考と行動を交互に繰り返す",
+      "Plan-and-Execute: 最初に計画を立て、ステップごとに実行",
+      "Reflection: 自身の出力を批判的に評価し改善",
+      "Tool Use Orchestration: 複数ツールの動的な組み合わせ"
+    ],
+    useCase: "\u{1F4BC} Slackデータからの知識抽出で、会話の文脈を追いながら自動的にナレッジグラフを構築するエージェント",
+    keyInsight: "単発のプロンプトではなく「思考のループ」を設計することが鍵。失敗時のフォールバック戦略も含めて設計する。",
+    difficulty: 4,
+    trending: true
+  },
+  {
+    id: "meta",
+    title: "\u{1FA9E} メタプロンプティング",
+    category: "テクニック",
+    color: "#7B2FF7",
+    summary: "LLMにプロンプト自体を生成・最適化させる再帰的アプローチ",
+    details: [
+      "Prompt Generation: タスク記述からプロンプトを自動生成",
+      "Self-Refinement: 生成したプロンプトの品質を自己評価",
+      "DSPy的アプローチ: プロンプトをプログラム的に最適化",
+      "A/Bテスト自動化: 複数バリアントの自動評価"
+    ],
+    useCase: "\u{1F4BC} 企業ごとに異なるSlack文化に適応する知識抽出プロンプトを、メタプロンプトで自動調整",
+    keyInsight: "プロンプトを「書く」から「育てる」へ。評価基準を明確にすることが成功の前提条件。",
+    difficulty: 5,
+    trending: true
+  },
+  {
+    id: "structured",
+    title: "\u{1F4D0} 構造化出力設計",
+    category: "テクニック",
+    color: "#00B4D8",
+    summary: "JSON/XML/グラフなど、機械処理可能な形式で一貫した出力を得る技法",
+    details: [
+      "Schema-Driven: JSON Schemaで出力形式を厳密に定義",
+      "Few-Shot + Schema: 例示とスキーマの組み合わせ",
+      "段階的構造化: 自由文→半構造→完全構造への変換",
+      "エラーハンドリング: パース失敗時のリカバリ戦略"
+    ],
+    useCase: "\u{1F4BC} Teams会話をナレッジグラフのノード・エッジ形式に変換する際の出力スキーマ設計",
+    keyInsight: "出力スキーマはAPIコントラクトと同じ。曖昧さゼロを目指し、エッジケースも明示的に定義する。",
+    difficulty: 3,
+    trending: false
+  },
+  {
+    id: "rag",
+    title: "\u{1F50D} RAG + Knowledge Graph",
+    category: "アーキテクチャ",
+    color: "#2EC4B6",
+    summary: "検索拡張生成とナレッジグラフを融合した高精度な情報抽出・回答システム",
+    details: [
+      "Graph RAG: ナレッジグラフをRAGの検索ソースに活用",
+      "Hybrid Search: ベクトル検索+グラフ探索の組み合わせ",
+      "Contextual Chunking: 文脈を保持した賢いチャンク分割",
+      "Iterative Retrieval: 検索→生成→再検索のループ"
+    ],
+    useCase: "\u{1F4BC} 企業のSlack/Teams会話からナレッジグラフを構築し、ユーザーインタビューの質問を動的に生成",
+    keyInsight: "「何を検索するか」のプロンプト設計がRAG全体の品質を左右する。検索クエリの生成自体がプロンプトエンジニアリング。",
+    difficulty: 5,
+    trending: true
+  },
+  {
+    id: "chain",
+    title: "\u26D3\uFE0F プロンプトチェーニング",
+    category: "テクニック",
+    color: "#E71D36",
+    summary: "複雑なタスクを小さなステップに分解し、連鎖的に処理する手法",
+    details: [
+      "Sequential Chain: 前のステップの出力を次の入力に",
+      "Branching: 条件分岐による動的なフロー制御",
+      "Map-Reduce: 大量データの並列処理→集約",
+      "Verification Chain: 生成→検証→修正のパイプライン"
+    ],
+    useCase: "\u{1F4BC} 大量のSlackスレッドを並列で要約→トピック分類→関連性スコアリング→ナレッジ統合",
+    keyInsight: "各ステップの入出力インターフェースを明確に定義することが、チェーン全体の堅牢性を決める。",
+    difficulty: 3,
+    trending: false
+  },
+  {
+    id: "evaluation",
+    title: "\u{1F4CA} LLM-as-Judge 評価",
+    category: "品質管理",
+    color: "#FF9F1C",
+    summary: "LLM自身を評価者として使い、出力品質を自動的に測定・改善するフレームワーク",
+    details: [
+      "Rubric-Based: 明示的な評価基準に基づくスコアリング",
+      "Pairwise Comparison: 2つの出力を比較して優劣判定",
+      "Multi-Aspect: 正確性・関連性・完全性を個別評価",
+      "Calibration: 人間の評価との一致度を継続的に改善"
+    ],
+    useCase: "\u{1F4BC} 知識抽出の品質を自動評価し、プロンプトの改善サイクルを高速化",
+    keyInsight: "評価プロンプトの品質 \u2265 生成プロンプトの品質。評価基準の言語化スキルがプロエンジニアの差別化要因。",
+    difficulty: 4,
+    trending: true
+  }
+];
+
+let selectedId = null;
+let currentFilter = "all";
+
+function stars(d) {
+  return "\u2605".repeat(d) + "\u2606".repeat(5 - d);
+}
+
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderFilters() {
+  const cats = ["all", ...new Set(concepts.map(function(c) { return c.category; }))];
+  document.getElementById("filters").innerHTML = cats.map(function(cat) {
+    return '<button class="filter-btn ' + (currentFilter === cat ? "active" : "") + '" data-cat="' + esc(cat) + '">' + (cat === "all" ? "すべて" : esc(cat)) + '</button>';
+  }).join("");
+
+  document.querySelectorAll(".filter-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      currentFilter = btn.dataset.cat;
+      selectedId = null;
+      render();
+    });
+  });
+}
+
+function renderCards() {
+  var filtered = currentFilter === "all" ? concepts : concepts.filter(function(c) { return c.category === currentFilter; });
+  document.getElementById("grid").innerHTML = filtered.map(function(c) {
+    var selectedStyle = selectedId === c.id
+      ? "border-color:" + c.color + ";background:linear-gradient(135deg," + c.color + "11," + c.color + "08);box-shadow:0 4px 24px " + c.color + "22;transform:scale(1.01)"
+      : "";
+    return '<div class="card" data-id="' + c.id + '" style="' + selectedStyle + '">'
+      + (c.trending ? '<span class="trending-badge">TRENDING</span>' : "")
+      + '<div class="card-title">' + esc(c.title) + '</div>'
+      + '<div class="card-summary">' + esc(c.summary) + '</div>'
+      + '<div class="card-meta">'
+      + '<span class="card-category" style="color:' + c.color + '">' + esc(c.category) + '</span>'
+      + '<span class="card-difficulty">' + stars(c.difficulty) + '</span>'
+      + '</div></div>';
+  }).join("");
+
+  document.querySelectorAll(".card").forEach(function(card) {
+    card.addEventListener("click", function() {
+      selectedId = selectedId === card.dataset.id ? null : card.dataset.id;
+      render();
+    });
+  });
+}
+
+function renderDetail() {
+  var panel = document.getElementById("detail");
+  var c = concepts.find(function(x) { return x.id === selectedId; });
+  if (!c) {
+    panel.classList.remove("visible");
+    return;
+  }
+  panel.classList.add("visible");
+  panel.style.border = "1.5px solid " + c.color + "44";
+  panel.style.boxShadow = "0 8px 32px " + c.color + "11";
+
+  var techniquesHtml = c.details.map(function(d, i) {
+    return '<div class="technique-item">'
+      + '<span class="technique-num" style="color:' + c.color + '">' + String(i + 1).padStart(2, "0") + '</span>'
+      + esc(d) + '</div>';
+  }).join("");
+
+  panel.innerHTML = '<div class="detail-title" style="border-bottom:2px solid ' + c.color + '33">' + esc(c.title) + '</div>'
+    + '<div style="margin-bottom:20px">'
+    + '<div class="section-label" style="color:' + c.color + '">KEY TECHNIQUES</div>'
+    + techniquesHtml + '</div>'
+    + '<div class="usecase-box" style="background:' + c.color + '0a;border:1px solid ' + c.color + '22">'
+    + '<div class="section-label" style="color:' + c.color + '">YOUR USE CASE</div>'
+    + '<div class="usecase-text">' + esc(c.useCase) + '</div></div>'
+    + '<div class="insight-box" style="border-left:3px solid ' + c.color + '">'
+    + '<div class="insight-label">\u{1F4A1} KEY INSIGHT</div>'
+    + '<div class="insight-text">' + esc(c.keyInsight) + '</div></div>';
+}
+
+function render() {
+  renderFilters();
+  renderCards();
+  renderDetail();
+}
+
+render();
+</script>
+</body>
+</html>
